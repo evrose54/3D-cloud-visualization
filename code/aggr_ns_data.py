@@ -14,7 +14,7 @@ import iris
 import xarray as xr
 
 # My packages and local scripts
-from aeolus.coord_utils import UM_TIME
+from aeolus.coord import UM_TIME
 from aeolus.core import Run
 from aeolus.exceptions import MissingCubeError
 

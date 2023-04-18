@@ -9,9 +9,9 @@ import numpy as np
 
 from scipy import interpolate
 
-from aeolus.coord_utils import UM_LATLON
+from aeolus.coord import UM_LATLON
 from aeolus.plot import GeoAxesGrid, label_global_map_gridlines
-from aeolus.util import subplot_label_generator
+from aeolus.plot.text import subplot_label_generator
 
 
 CART_KW = dict(transform=ccrs.PlateCarree())

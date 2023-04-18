@@ -42,9 +42,9 @@ from aeolus.calc import (
 from aeolus.calc.metpy import preprocess_iris
 from aeolus.const import get_planet_radius
 from aeolus.const.const import ScalarCube
-from aeolus.coord_utils import ensure_bounds, UM_HGT, UM_LATLON, UM_TIME, coord_to_cube
+from aeolus.coord import ensure_bounds, UM_HGT, UM_LATLON, UM_TIME, coord_to_cube
 from aeolus.exceptions import MissingCubeError
-from aeolus.misc import net_horizontal_flux_to_region
+from aeolus.calc.flux_h import net_horizontal_flux_to_region
 from aeolus.subset import _dim_constr, l_range_constr
 from commons import DAYSIDE, NIGHTSIDE
 
