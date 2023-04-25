@@ -1,6 +1,8 @@
 import iris
 import iris_grib
 import numpy as np
+import pyvista as pv
+from pyvista import examples
 import os
 import sys
 
@@ -93,31 +95,12 @@ def extractCloudCondensate(cmr_cubes, icmr_cubes):
 
 def mapCloudProfilesToCondensate(cloudMatrix):
     for lvl in range(np.shape(cloudMatrix)[0]):
-        for row in range(np.shape(cloudMatrix)[1]):
-            for col in range(np.shape(cloudMatrix)[2]):
-                cloudMatrix[lvl][row][col] = 1e-5 if isPixelCloud(cloudMatrix[lvl][row][col]) else 0
-
-def maskCloudTypeToCondensate(cloudMatrix):
-    # pixel = 1e-05 if isPixelCloud(pixel) else 0
-    # print("pixel input = " + str(pixel))
-    # print(pixel)
-    for lvl in range(np.shape(cloudMatrix)[0]):
-        for row in range(np.shape(cloudMatrix)[1]):
-            for col in range(np.shape(cloudMatrix)[2]):
-                pixel = cloudMatrix[lvl][row][col]
-                if pixel == 2 or pixel == 3:
-                    cloudMatrix[lvl][row][col] = 0.00003
-                elif pixel == 4 or pixel == 5:
-                    cloudMatrix[lvl][row][col] = 0.00004
-                elif pixel == 6 or pixel == 7:
-                    cloudMatrix[lvl][row][col] = 0.00005
-                elif pixel == 8 or pixel == 9:
-                    cloudMatrix[lvl][row][col] = 0.00006
-                else: cloudMatrix[lvl][row][col] = 0
+        ensureTerrain = False if lvl > 15 else True
+        cloudMatrix[lvl] = maskCloudTypeToCmr(cloudMatrix[lvl],ensureTerrain)
     return cloudMatrix
 
 
-def testNewMask(cloudMatrix):
+def maskCloudTypeToCondensate(cloudMatrix):
     finalCldMatrix = np.zeros(np.shape(cloudMatrix),dtype="float32")
     waterLow = np.where(cloudMatrix == 2, 1, 0); waterHi = np.where(cloudMatrix == 3, 1, 0)
     superLow = np.where(cloudMatrix == 4, 1, 0); superHi = np.where(cloudMatrix == 5, 1, 0)
@@ -129,8 +112,66 @@ def testNewMask(cloudMatrix):
     finalCldMatrix[mixedLow == 1] = 0.00005; finalCldMatrix[mixedHi == 1] = 0.00005
     finalCldMatrix[iceLow == 1] = 0.00006; finalCldMatrix[iceHi == 1] = 0.00006
     # print(finalCldMatrix[finalCldMatrix == 0.00005])
+    print(finalCldMatrix)
     return finalCldMatrix
 
+
+def maskCloudTypeToCmr(cloudMatrix):
+    finalCldMatrix = np.zeros(np.shape(cloudMatrix),dtype="float32")
+    water = np.where(cloudMatrix == 1, 0.00003, 0)
+    super = np.where(cloudMatrix == 2, 0.00004, 0)
+    mixed = np.where(cloudMatrix == 3, 0.00005, 0)
+    ice = np.where(cloudMatrix == 4, 0.00006, 0)
+    
+    finalCldMatrix[water > 0] = 0.00003
+    finalCldMatrix[super > 0] = 0.00004
+    finalCldMatrix[mixed > 0] = 0.00005
+    finalCldMatrix[ice > 0] = 0.00006
+    # print(finalCldMatrix)
+    return finalCldMatrix
+
+
+def maskByTerrain(cloudMatrix):
+    finalCldMatrix = np.where(cloudMatrix == 6, 0.00002, 0)
+    return finalCldMatrix
+
+
+def sphere_with_texture_map(radius=1.0, lat_resolution=180, lon_resolution=360):
+    """Sphere with texture coordinates.
+
+    Parameters
+    ----------
+    radius : float, default: 1.0
+        Sphere radius.
+
+    lat_resolution : int, default: 100
+        Set the number of points in the latitude direction.
+
+    lon_resolution : int, default: 100
+        Set the number of points in the longitude direction.
+
+    Returns
+    -------
+    pyvista.PolyData
+        Sphere mesh with texture coordinates.
+
+    """
+    theta, phi = np.mgrid[0 : np.pi : lat_resolution * 1j, 0 : 2 * np.pi : lon_resolution * 1j]
+    x = radius * np.sin(theta) * np.cos(phi)
+    y = radius * np.sin(theta) * np.sin(phi)
+    z = radius * np.cos(theta)
+    sphere = pv.StructuredGrid(x, y, z)
+    texture_coords = np.empty((sphere.n_points, 2))
+    texture_coords[:, 0] = phi.ravel('F') / phi.max()
+    texture_coords[:, 1] = theta[::-1, :].ravel('F') / theta.max()
+    sphere.active_t_coords = texture_coords
+    return sphere.extract_surface(pass_pointid=False, pass_cellid=False)
+
+
+def getGlobeMesh():
+    globe = sphere_with_texture_map(radius=6371200.0, lat_resolution=90, lon_resolution=90)
+    globe.textures["surface"] = examples.load_globe_texture()
+    return globe
 
 cloud_types = ["0001","0010","0011","0100"] #water, supercooled, mixed, ice
 
